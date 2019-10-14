@@ -14,14 +14,14 @@ The book was released in 2015, and the Linux kernel has advanced a major version
 - in _kernel mode_, a process has unlimited access to mem
 - mem that can only be accessed in _kernel mode_: _kernel space_
 
-## The Kernel
+### The Kernel
 - determines which **processes** are allowed to use the CPU
 - keeps track of **memory** - who can access what, what is free, what is shared, etc
 - interface betw **hardware** and processes 
 - provides **system calls** - used by processes to communicate with the kernel
 
 ### Process Management
-- context switching - when kernel stops currently running process and replaces it with another one
+- context switching - when kernel stops currently running process and starts executing another one
 - each process gets a fraction of a second (_time slice_) to do it's thing before another context switch occurs
 
 When CPU determines that the current process's _time slice_ is up:
@@ -46,6 +46,7 @@ When CPU determines that the current process's _time slice_ is up:
 ### Device Drivers and Management
 - devices normally accessible only in kernel mode
 - device drivers can be embedded into the kernel, or loadable modules (https://unix.stackexchange.com/questions/47208/what-is-the-difference-between-kernel-drivers-and-kernel-modules)
+- "Linux Device Drivers, 3rd Ed" (2005) available for free: https://lwn.net/Kernel/LDD3/
 
 ### System Calls
 - opening, reading, writing files - all done through system calls
@@ -61,3 +62,25 @@ When CPU determines that the current process's _time slice_ is up:
 - every user-space process has a user _owner_, which process runs _as_
 - users cannot interfere with other user's processes
 - `root` user, aka `superuser` - can do anything to any process and any file
+
+## 2. Basic Commands and Directory Hierarchy
+
+### Shell
+- Unix had Bourne shell - `/bin/sh`; Linux comes with `bash` - Bourne Again Shell
+- default shell for each user - in `/etc/passwd`
+- `/etc/shells` provides a list with all installed shells
+- Ubuntu: default shell is `/bin/bash`, but `/bin/sh` is also installed by default
+- Ubuntu: `/bin/sh` is **not** the Bourne shell; it's a symbolic link to `/bin/dash`
+- `dash` is a modern POSIX-compliant implementation of Bourne shell (https://linux.die.net/man/1/dash)
+
+#### Standard Input and Standard Output
+- Unix processes use I/O _streams_ to read and write data
+- kernel provides a standard input stream, used by some programs when input is not specified (ex: `cat`)
+- <kbd>CTRL</kbd> + <kbd>D</kbd>: stops current standard input entry from terminal - which can also terminate the program
+- <kbd>CTRL</kbd> + <kbd>C</kbd>: terminates current program
+- kernel gives each program a standard output - normally connected to the terminal
+- many commands are like `cat` - read from _stdin_ if no input stream specified
+- output behavior varies more - some programs send output only to _stdout_, others can also write to files
+
+## Other Resources
+- "live" book about Linux internals: https://0xax.gitbooks.io/linux-insides/content/
