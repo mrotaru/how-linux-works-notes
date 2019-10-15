@@ -82,5 +82,63 @@ When CPU determines that the current process's _time slice_ is up:
 - many commands are like `cat` - read from _stdin_ if no input stream specified
 - output behavior varies more - some programs send output only to _stdout_, others can also write to files
 
+#### Basic Commands
+- `cp`, `mv` - when 2+ args, last one is dest dir, others are files to be copied/moved
+- `touch` - creates file; if existing, updates the modification timestamp
+- `*` glob pattern matches any number of characters - including  - while `?` matches 1 character
+
+#### Intermediate Commands
+- `grep root /etc/*` - check every file in `/etc`, including subdirs, for "root"
+- common `grep` flags: `-i` - case insensitive, `-v` - invert
+- `less`: view file one screenful at a time; <kbd>Space</kbd> for next screenful, <kbd>b</kbd> for previous, <kbd>q</kbd> to quit
+- `less`: to search for "foo": <kbd>/foo</kbd>; <kbd>n</kbd> - next match; <kbd>?foo</kbd> - search backward
+- can pipe command output to it: `grep ie /usr/share/dict/words | less`
+- `less` is an enhanced vers of `more`
+- `diff f1 f2` shows human-readable output by default; use `-u` for machine-readable patch
+- `file` command shows details about the file - such as encoding, what type of binary it is, etc
+- `find /etc/ -name passwd -print` - print all files named `passwd` in `/etc`
+- `head`, `tail` - print first and last lines of a file; how many lines ? 10 by default, configrable with `-n`
+- `sort` - sort lines in a file, alphanumerically by default; `-n` to compare by string numerical value
+- files with name starting with `.` not shown by `ls` by default; use `ls -a` to see them
+- shell globs don't match dot files, unless explicitly included: `.*`
+- use `.[^.]` or `.??*` to exclude current (`.`) and parent (`..`) directories
+
+#### Variables
+```bash
+FOO=bar # shell variable; is temporary, and "dies" with the current shell
+BAR="contains spaces" # use quotes if value contains whitespace chars
+export FOO # make the shell variable into an environment variable
+```
+- `export` makes a shell variable available to current process's _child_ processes
+- parent process will not "see" variables `export`ed by child processes (https://askubuntu.com/q/53177/20187)
+- to "load" variables not present in the environment, use `source`: `source file-with-vars`
+
+#### Moving Around on the Command Line
+- <kbd>CTRL</kbd> - <kbd>B</kbd> - mv cursor left
+- <kbd>CTRL</kbd> - <kbd>F</kbd> - mv cursor right
+- <kbd>CTRL</kbd> - <kbd>P</kbd> - view prev command, or mv cursor up
+- <kbd>CTRL</kbd> - <kbd>N</kbd> - view next command, or mv cursor down
+- <kbd>CTRL</kbd> - <kbd>A</kbd> - mv cursor to start of line
+- <kbd>CTRL</kbd> - <kbd>E</kbd> - mv cursor to end of line
+- <kbd>CTRL</kbd> - <kbd>W</kbd> - erase preceding word
+- <kbd>CTRL</kbd> - <kbd>U</kbd> - erase from cursor to start of line
+- <kbd>CTRL</kbd> - <kbd>K</kbd> - erase from cursor to end of line
+- <kbd>CTRL</kbd> - <kbd>Y</kbd> - paste erased text
+
+#### Command Documentation
+- `man` pages contain dry reference information - they're not tutorials
+- `man -k sort` - shows a list of all manual pages which include the "sort" keyword
+- `man 5 passwd` - show section `5` (see below) of `passwd` manual - info about `/etc/passwd` file
+
+##### Manual Sections
+- `1` - user commands
+- `2` - system calls
+- `3` - higher-level Unix programming library docs
+- `4` - device interface and driver information
+- `5` - file descriptions - system configuration files
+- `6` - games
+- `7` - file formats, conventions and encodings
+- `8` - system commands and servers
+
 ## Other Resources
 - "live" book about Linux internals: https://0xax.gitbooks.io/linux-insides/content/
