@@ -140,5 +140,39 @@ export FOO # make the shell variable into an environment variable
 - `7` - file formats, conventions and encodings
 - `8` - system commands and servers
 
+#### Redirection
+- `ls > file.txt`  - file.txt will be "clobbered" if already existing
+- `ls >> file.txt`  - output of `ls` will be _appended_ to file.txt
+- `ls 2> errors.txt` - redirect STDERR to errors.txt
+- `ls 2>&1` - redirect STDERR to STDOUT
+- `head < ls` ≡ `ls | head`
+- https://en.wikipedia.org/wiki/Standard_streams
+- gregs: https://mywiki.wooledge.org/BashGuide/InputAndOutput#Redirection
+- man: https://www.gnu.org/savannah-checkouts/gnu/bash/manual/bash.html#Redirections
+
+#### Managing Processes
+- `ps x` - show all _yours_
+- `ps ax` - show all - not just yours
+- `ps u` - more details
+- `ps w` - full command names (wide output)
+- more examples in man: http://man7.org/linux/man-pages/man1/ps.1.html#EXAMPLES
+- `kill 42` - send `SIGTERM` signal to process with PID `42` (signals: http://man7.org/linux/man-pages/man7/signal.7.html)
+- `kill -TERM 42` ≡ `kill 42` - short version of signal name (without SIG) can be used
+- `SIGSTOP` and `SIGCONT` can be used to suspend/resume processes (`kill -STOP 42` and `kill -CONT 42`)
+- <kbd>CTRL</kbd> - <kbd>C</kbd> - same as `kill -INT` for current process (`SIGINT`)
+
+##### Job Control
+- https://en.wikipedia.org/wiki/Job_control_(Unix)#Implementation
+- `jobs` shows current background jobs
+- `bg` - resume suspended jobs in background
+- `fg` - resume suspended jobs in foreground
+- <kbd>CTRL</kbd> - <kbd>Z</kbd> - sends `SIGTSTP` to current process; similar to `SIGSTOP` (https://stackoverflow.com/a/11888074/447661)
+
+##### Background Processes
+- not the same as jobs
+- https://unix.stackexchange.com/questions/4214/what-is-the-difference-between-a-job-and-a-process
+- `gunzip file.gz &` - detach process from shell, put it in the background; `PID` printed as response
+- background processes can still write to stdout and stderr - redirect to ensure this doesn't happen
+
 ## Other Resources
 - "live" book about Linux internals: https://0xax.gitbooks.io/linux-insides/content/
