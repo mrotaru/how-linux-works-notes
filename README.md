@@ -1,6 +1,6 @@
-# How Linux Works - 2nd Ed
+# Learning Linux
 
-The book was released in 2015, and the Linux kernel has advanced a major version - from 4 to 5. However, it looks like the major version bump does not actually indicate major changes: https://itsfoss.com/linux-kernel-5/ so most things in the book should still be relevant.
+Notes based primarily on "How Linux Works" (2nd Ed), extended with information from many other sources. The book was released in 2015, and the Linux kernel has advanced a major version - from 4 to 5. However, it looks like the major version bump does not actually indicate major changes: https://itsfoss.com/linux-kernel-5/ so most things in the book should still be relevant.
 
 ## 1. The Big Picture
 
@@ -19,6 +19,7 @@ The book was released in 2015, and the Linux kernel has advanced a major version
 - keeps track of **memory** - who can access what, what is free, what is shared, etc
 - interface betw **hardware** and processes 
 - provides **system calls** - used by processes to communicate with the kernel
+- "live" book about Linux internals: https://0xax.gitbooks.io/linux-insides/content/
 
 ### Process Management
 - context switching - when kernel stops currently running process and starts executing another one
@@ -155,6 +156,7 @@ export FOO # make the shell variable into an environment variable
 - `ps ax` - show all - not just yours
 - `ps u` - more details
 - `ps w` - full command names (wide output)
+- `ps auwx` - the full monty
 - more examples in man: http://man7.org/linux/man-pages/man1/ps.1.html#EXAMPLES
 - `kill 42` - send `SIGTERM` signal to process with PID `42` (signals: http://man7.org/linux/man-pages/man7/signal.7.html)
 - `kill -TERM 42` ≡ `kill 42` - short version of signal name (without SIG) can be used
@@ -174,5 +176,82 @@ export FOO # make the shell variable into an environment variable
 - `gunzip file.gz &` - detach process from shell, put it in the background; `PID` printed as response
 - background processes can still write to stdout and stderr - redirect to ensure this doesn't happen
 
-## Other Resources
-- "live" book about Linux internals: https://0xax.gitbooks.io/linux-insides/content/
+#### File Modes and Permissions
+
+- file "mode" represented with 10 characters: `TUUUGGGOOO`
+  - T: type; "-" → regular file; "d" → directory
+  - UUU: user permissions
+  - GGG: group permissions
+  - OOO: other/world permissions
+  - each permission: 0 - read, 1 - write, 2 - execute (for dirs, execute = list files inside)
+- `chmod g+r file` - set the groups (`g`) "read" (`r`) bit to `1` (add read permission)
+- `chmod g-r file` - set the groups (`g`) "read" (`r`) bit to `0` (remove read permission)
+- `chmod go+r file` - set `g` _and_ `o` to 1
+- the `-R` flag can be used to apply modes recursively
+- capital mode means only apply to dirs: `chmod -R a+rX *` - set `x` just for dirs (https://stackoverflow.com/a/14634721/447661)
+- `sudo chmod -R u+rwX,g+rwX,o+rX .` - recursive; files to 664, dirs to 775
+
+Modes:
+- 4: `r` → `100`
+- 2: `w` → `010`
+- 1: `x` → `001`
+- `rwx` → `111` → 4 + 2 + 1 = 7
+- `rw-` → `110` → 4 + 2 + 0 = 6
+- `r--` → `100` → 4 + 0 + 0 = 4
+- `r-x` → `101` → 4 + 0 + 1 = 5
+- `644` → `rw-r--r--` (files)
+- `600` → `rw-------` (files)
+- `755` → `rwxr-xr-x` (exe/dirs)
+- `700` → `rwxr-----` (exe/dirs)
+- `711` → `rwxr-1--1` (dirs)
+
+#### Links
+
+- `ln -s existing_target new_link`
+- if inverted, creates cyclical (broken) link
+- to find broken links (dest. missing): `find . -xtype l` (https://unix.stackexchange.com/a/38691/39603)
+- to find broken links (dest. missing, _or_ cyclical): `find /path/to/search -type l -exec test ! -e {} \; -print` (https://serverfault.com/a/433273)
+
+#### Archiving
+- can't use `gzip` to zip a folder - only works for files
+- use `tar` to "concatenate" files together: `tar cvf file1 file2 ...` 
+- `tar xvf archive.tar` - unpack in current dir (`x` - e**x**tract)
+- `tar t archive.tar` - list contents, basic integrity check
+- `p` flag will **p**reserve permission bits, overriding local `umask`
+- `p` is used implicitly when operating as the superuser
+- permissions are set **after** extraction is complete - so let `tar` finish
+- with `.tar.gz` files, first resolve `.gz` (with `gunzip`) the `.tar` (with `tar x`)
+- or: `zcat file.tar.gz | tar xvf -`
+- `tar` also has `z` flag:
+    - to verify compressed archive: `tar ztvf file.tar.gz`
+    - to extract compressed archive: `tar xzvf file.tar.gz`
+    - to create compressed archive: `tar czvf file.tar.gz`
+- the `j` flag should be used instead of `z` for `bzip`-compressed files
+- `zip`/`unzip` also come with most distributions
+
+### Directory Hierarchy
+
+- https://refspecs.linuxfoundation.org/FHS_3.0/fhs/index.html
+- https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard
+- `/` - root
+    - `/bin` - `ls`, `cp`, ... - binary (and script) utils for all users
+    - `/dev` - device files
+    - `/etc` - core system config
+    - `/home` - personal dirs for regular users
+    - `/lib` - shared libraries
+        - `/lib/modules` - loadable kernel modules
+    - `/proc` - system statistics
+    - `/sys` - similar to `/proc` - device and system interface
+    - `/sbin` - system executables - often not in user's `$PATH`, many require root
+    - `/tmp` - temporary - accessible to all users
+    - `/usr` - lots of stuff; most of the OS; similar layout to `/`; exists for historic reasons
+        - `/usr/include` - `C` header files
+        - `/usr/info` - GNU info manuals
+        - `/usr/local` - where sysadmins should install software
+        - `/usr/man` - manual pages
+        - `/usr/share` - exists mostly for historic reasons
+    - `/var` - logs, caches, etc
+    - `/boot` - kernel boot loader files
+        - `/boot/vmlinuz` - kernel; boot loader loads it into memory
+    - `/media` - where removable devices would be attached
+    - `/opt` - additional third-party software; many distros don't use it
