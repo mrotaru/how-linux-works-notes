@@ -255,3 +255,99 @@ Modes:
         - `/boot/vmlinuz` - kernel; boot loader loads it into memory
     - `/media` - where removable devices would be attached
     - `/opt` - additional third-party software; many distros don't use it
+
+## 3. Devices
+
+- `/dev/null` is a device - it simply discards any input
+- device files are in `/dev` 
+- `b` - block, `c` - character, `p` - pipe, `s` - socket
+- doesn't look like there is a single pipe or socket in Ubuntu 18.04 LTS
+
+```
+$ cd /dev && ls -l # output truncated
+crw-rw-rw- 1 root root      1,   3 Mar  2 12:40 null
+brw-rw---- 1 root disk      8,   0 Mar  2 12:40 sda
+brw-rw---- 1 root disk      8,   1 Mar  2 12:40 sda1
+brw-rw---- 1 root disk      8,   2 Mar  2 12:40 sda2
+drwxr-xr-x 2 root root          60 Mar  2 12:40 usb
+crw-rw-rw- 1 root tty       5,   0 Mar  2 12:40 tty
+crw--w---- 1 root tty       4,   0 Mar  2 12:40 tty0
+crw--w---- 1 root tty       4,   1 Mar  2 12:40 tty1
+crw--w---- 1 root tty       4,  10 Mar  2 12:40 tty10
+```
+- in `/dev`, name doesn't say much; also, devices are added as they are found
+- so `/sys/devices` offers more information
+- https://mirrors.edge.kernel.org/pub/linux/docs/lanana/device-list/devices-2.6.txt
+
+```
+$ ls /sys
+block  bus  class  dev  devices  firmware  fs  hypervisor  kernel  module  power
+
+$ ls /sys/dev
+block  char
+
+$ ls /sys/devices/
+breakpoint  cpu  ibs_fetch  ibs_op  isa  LNXSYSTM:00  msr  pci0000:00  platform  pnp0  software  system  tracepoint  virtual
+```
+- `udevadm` can be used to obtain more information about a device   :
+
+```
+$ udevadm info --query=all --name=/dev/sda
+P: /devices/pci0000:00/0000:00:14.1/ata1/host0/target0:0:1/0:0:1:0/block/sda
+N: sda
+S: disk/by-id/ata-Samsung_SSD_860_PRO_256GB_S42VNF0M805065Y
+S: disk/by-id/wwn-0x5002538e99843e08
+S: disk/by-path/pci-0000:00:14.1-ata-1
+E: DEVLINKS=/dev/disk/by-id/wwn-0x5002538e99843e08 /dev/disk/by-path/pci-0000:00:14.1-ata-1 /dev/disk/by-id/ata-Samsung_SSD_860_PRO_256GB_S42VNF0M805065Y
+E: DEVNAME=/dev/sda
+E: DEVPATH=/devices/pci0000:00/0000:00:14.1/ata1/host0/target0:0:1/0:0:1:0/block/sda
+E: DEVTYPE=disk
+E: ID_ATA=1
+E: ID_ATA_ROTATION_RATE_RPM=0
+E: ID_ATA_SATA=1
+E: ID_ATA_SATA_SIGNAL_RATE_GEN1=1
+E: ID_ATA_SATA_SIGNAL_RATE_GEN2=1
+E: ID_ATA_WRITE_CACHE=1
+E: ID_ATA_WRITE_CACHE_ENABLED=0
+E: ID_BUS=ata
+E: ID_MODEL=Samsung_SSD_860_PRO_256GB
+E: ID_MODEL_ENC=Samsung\x20SSD\x20860\x20PRO\x20256GB\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20
+E: ID_PART_TABLE_TYPE=gpt
+E: ID_PART_TABLE_UUID=14a768bb-d94b-4be1-84a1-03d1299563ab
+E: ID_PATH=pci-0000:00:14.1-ata-1
+E: ID_PATH_TAG=pci-0000_00_14_1-ata-1
+E: ID_REVISION=RVM01B6Q
+E: ID_SERIAL=Samsung_SSD_860_PRO_256GB_S42VNF0M805065Y
+E: ID_SERIAL_SHORT=S42VNF0M805065Y
+E: ID_TYPE=disk
+E: ID_WWN=0x5002538e99843e08
+E: ID_WWN_WITH_EXTENSION=0x5002538e99843e08
+E: MAJOR=8
+E: MINOR=0
+E: SUBSYSTEM=block
+E: TAGS=:systemd:
+E: USEC_INITIALIZED=4315137
+```
+
+- `dd` can be used to interact with block device files
+- https://en.wikipedia.org/wiki/Dd_(Unix)
+
+```
+$ dd if=/dev/zero of=new_file bs=1024 count=1
+1+0 records in
+1+0 records out
+1024 bytes (1.0 kB, 1.0 KiB) copied, 0.000426194 s, 2.4 MB/s
+```
+- `/dev/sd*`: disk drives; "sd" stands for <abbr title="Small Computer System Interface">SCSI</abbr> disk
+- drives added and named in the order they are detected
+- if you have `sda`, `sdb` and `sdc` and remove `sdb`, the old `sdc` becomes `sdb`
+- `/dev/sr*`: read-only CD/DVD drives
+
+### Terminals, Consoles
+
+- end of [this document](https://mirrors.edge.kernel.org/pub/linux/docs/lanana/device-list/devices-2.6.txt) has some info 
+- http://www.linusakesson.net/programming/tty
+- https://unix.stackexchange.com/questions/4126/what-is-the-exact-difference-between-a-terminal-a-shell-a-tty-and-a-con
+- `/dev/tty` - controlling terminal of current process
+- `/dev/tty1` - the first virtual console
+- `/dev/pts/0` - the first pseudoterminal device
