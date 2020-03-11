@@ -371,12 +371,38 @@ $ dd if=/dev/zero of=new_file bs=1024 count=1
 - terminal emulator gets input from the display server, and writes it to the "master" pseudo-terminal character device file
 - the OS (kernel) will automatically write the same input to the corresponding "slave" pseudo-terminal character device file
 - the process has it's `stdin` and `stdout` connected to the "slave" ptdf
-- virtual consoles - can switch between them with <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + `{` <kbd>F1<kbd>, ... <kbd>F8</kbd> `}`
+- virtual consoles - can switch between them with <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + `{` <kbd>F1</kbd>, ... <kbd>F8</kbd> `}`
 - the display server normally runs as the 7th virtual console
 - a virtual console acts like a terminal emulator, but is implemented in the kernel
 - `/dev/pts/` - pseudo-terminal slaves
 - `/dev/tty` - "controlling" terminal file (depends on what process opens it)
 - `/dev/ttyX` - "virtual console" terminal files
+
+#### [Unix terminals and shells - 2 of 5](https://www.youtube.com/watch?v=hgFBRZmwpSM)
+- terminal is dumb - just displays characters, and sends keyboard input
+- shell - reads from a terminal, and interprets the input as commands
+- shells have a configurable prompt, where the user enters commands
+- when the shell is expecting the user to type a command, it puts the terminal into echoing mode
+- the shell interprets <kbd>Enter</kbd> as the end of a command, which it interprets and executes
+- process command - `program-name arguments`
+- where does the shell look for `program-name` ?
+    - `foo` - dirs in the current process' `$PATH` env var
+    - `/bin/foo` - root dir
+    - `bin/foo` - in `$PWD` (current directory)
+    - `./foo` - `foo` in `$PWD`
+- to invoke a program:
+    - shell `fork`s itself
+    - parent invokes [`WAIT`](http://man7.org/linux/man-pages/man2/waitpid.2.html) syscall to wait for child process to complete
+    - child process calls `exec` to run the command (it is just a continuation of the shell process until then), passing in the program arguments
+        - `exec` copies the args somewhere in the heap of the process `NULL`-terminated, and puts the address in the first stack frame
+        - http://man7.org/linux/man-pages/man3/exec.3.html
+- in `bash`, some characters have special meaning
+- ``# ' " \ $ ` * ~ ? < > ( ) ! | & ; space newline``
+- `\` - quote the following char _or_ start an escape sequence
+- `''` - quote _every_ enclosed metacharacter
+- `""` - quote enclosed metacharacters, except ``$ ` \ * @``
+- `ls -la\ bin` - invoke `ls` with a single argument, `-la bin`
+- a backslash before a newline allows splitting a command on multiple lines
 
 #### Other Resources
 - very good and very technical, plus historic bg: http://www.linusakesson.net/programming/tty
