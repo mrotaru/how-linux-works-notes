@@ -345,9 +345,40 @@ $ dd if=/dev/zero of=new_file bs=1024 count=1
 
 ### Terminals, Consoles
 
-- end of [this document](https://mirrors.edge.kernel.org/pub/linux/docs/lanana/device-list/devices-2.6.txt) has some info 
-- http://www.linusakesson.net/programming/tty
-- https://unix.stackexchange.com/questions/4126/what-is-the-exact-difference-between-a-terminal-a-shell-a-tty-and-a-con
+- not much info in HLW 
 - `/dev/tty` - controlling terminal of current process
 - `/dev/tty1` - the first virtual console
-- `/dev/pts/0` - the first pseudoterminal device
+- `/dev/pts/0` - the first pseudo-terminal device ()
+- `tty` - print the file name of the terminal connected to standard input
+- when `ssh`ing, `tty` outputs `/dev/pts/0`
+- when local, `tty` outputs `/dev/tty1`
+
+#### [Unix terminals and shells - 1 of 5](https://www.youtube.com/watch?v=07Q9oqNLXB4)
+- hardware (real) terminal device: keyboard + character-based display (normally, fixed grid)
+- in UNIX, a process communicates w. a terminal using a file representing that terminal; a character device file
+- terminal is dumb - just displays chars sent from the device file
+- the terminal device file can have "echo" mode turned on - will just "echo" input chars back to the terminal
+- later terminals added support for escape sequences, allowing func. like changing colour
+- escape sequences: http://ascii-table.com/ansi-escape-sequences-vt-100.php
+- when a process is started, it expects to inherit `stdin` (file descriptor 0) and `stdout` (file descriptor 1)
+- when `fork`, the parent `stdin` and `stdout` are copied to the child (so, same)
+- so UNIX programs generally don't look for a terminal themselves
+- in UNIX, the graphical environment runs as a separate process (not part of the kernel)
+- GUI programs send the content of their windows to the display server (`X`, `Wayland`) which is responsible for actually displaying them
+- terminal emulator - sends drawing commands to the display server, and receives keyboard input (and perhaps mouse clicks) from it
+- process talk to pseudo-terminal device files
+- when a terminal emulator starts, it asks the OS to allocate a pseudo-terminal
+- terminal emulator gets input from the display server, and writes it to the "master" pseudo-terminal character device file
+- the OS (kernel) will automatically write the same input to the corresponding "slave" pseudo-terminal character device file
+- the process has it's `stdin` and `stdout` connected to the "slave" ptdf
+- virtual consoles - can switch between them with <kbd>Ctrl</kbd> + <kbd>Alt</kbd> + `{` <kbd>F1<kbd>, ... <kbd>F8</kbd> `}`
+- the display server normally runs as the 7th virtual console
+- a virtual console acts like a terminal emulator, but is implemented in the kernel
+- `/dev/pts/` - pseudo-terminal slaves
+- `/dev/tty` - "controlling" terminal file (depends on what process opens it)
+- `/dev/ttyX` - "virtual console" terminal files
+
+#### Other Resources
+- very good and very technical, plus historic bg: http://www.linusakesson.net/programming/tty
+- end of [this document](https://mirrors.edge.kernel.org/pub/linux/docs/lanana/device-list/devices-2.6.txt) has some info 
+- https://unix.stackexchange.com/questions/4126/what-is-the-exact-difference-between-a-terminal-a-shell-a-tty-and-a-con
