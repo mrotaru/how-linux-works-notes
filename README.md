@@ -473,6 +473,45 @@ $ dd if=/dev/zero of=new_file bs=1024 count=1
 - conditionals (`if`, `while`) take a list of commands; the exit status of the last one is used to determine the outcome of the conditional (`0` → `true`, anything else → `false`)
 - the [`exit()`](http://man7.org/linux/man-pages/man3/exit.3.html) syscall is used to set the exit status, passed on to any waiting process
 
+#### [Unix terminals and shells - 4 of 5](https://www.youtube.com/watch?v=M82FUtqXdE8)
+```bash
+function foo { ls -la; cd /; }
+# same as:
+function foo {
+    ls -la
+    cd /
+}
+# to invoke a function, no parens required:
+foo 42 # invoke the foo function with one argument, "42"
+```
+- one could have a function with the same name as a built-in or a process command
+- "shadowing" order:
+  1. function call
+  2. built-in command
+  3. process command
+- functions and variables live in separate namespaces - can have fn and var with same name
+- function arguments available inside the fn body as `$1`, `$2`, etc
+- `$?` - the exist code of the previously executed command
+- the return value of a function is the exit code of the last command (built-in, or process)
+- can override exit code with `return` (must be a number)
+- brace expansion: `pre-{foo,bar}-post` expands into "pre-foo-post" and "pre-bar-post"
+- note: `pre-${foo,bar}-post` is a _variable_ expansion - only the first one will be expanded though
+- `~` - tilde expansion
+```bash
+# command substitution
+$(echo foo-$(echo bar)) # will be substituted with the result of running the command (the string "foo-bar")
+`echo foo-`echo bar`` # can't nest (substitution will end at second backtick, and start again)
+```
+- arithmetic substitution: `$((42 + 100))`, `$(((1 + 2) * 3))`
+    - automatically does variable substitution: `$((foo + 100))`
+- `*`, `?` - filename expansion - all matching files/folders included in expansion
+- order of expansions:
+  1. brace expansion (`foo{fizz,buzz}bar)`) 
+  2. tilde expansion
+  3. variable, arithmetic expansion, command substitution (same priority, outermost performed last)
+  4. filename expansion
+- there is more nuance to expansions and substitutions (https://linux.die.net/man/1/bash, "Expansion")
+
 #### Other Resources
 - very good and very technical, plus historic bg: http://www.linusakesson.net/programming/tty
 - end of [this document](https://mirrors.edge.kernel.org/pub/linux/docs/lanana/device-list/devices-2.6.txt) has some info 
