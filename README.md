@@ -404,6 +404,75 @@ $ dd if=/dev/zero of=new_file bs=1024 count=1
 - `ls -la\ bin` - invoke `ls` with a single argument, `-la bin`
 - a backslash before a newline allows splitting a command on multiple lines
 
+#### File Descriptors
+
+> In the traditional implementation of Unix, file descriptors index into a per-process file descriptor table maintained by the kernel, that in turn indexes into a system-wide table of files opened by all processes, called the file table. This table records the mode with which the file (or other resource) has been opened: for reading, writing, appending, and possibly other modes. It also indexes into a third table called the inode table that describes the actual underlying files.[3] To perform input or output, the process passes the file descriptor to the kernel through a system call, and the kernel will access the file on behalf of the process. The process does not have direct access to the file or inode tables. 
+>
+> On Linux, the set of file descriptors open in a process can be accessed under the path /proc/PID/fd/, where PID is the process identifier.
+>
+> In Unix-like systems, file descriptors can refer to any Unix file type named in a file system. As well as regular files, this includes directories, block and character devices (also called "special files"), Unix domain sockets, and named pipes. File descriptors can also refer to other objects that do not normally exist in the file system, such as anonymous pipes and network sockets. 
+>
+> (https://en.wikipedia.org/wiki/File_descriptor#Overview)
+
+- common file descriptors:
+  - `0` → `stdin`
+  - `1` → `stdout`
+  - `2` → `stderr`
+
+#### [Unix terminals and shells - 3 of 5](https://www.youtube.com/watch?v=GA2mIUQq48s)
+##### Redirection
+- redirection - when a process gets something other than the parents terminal for `stdin`/`stdout`
+- a shell starts by having its `stdin`/`stdout` connected to a terminal
+- because child processes inherit `stdin`/`stdout`, by default it uses the same terminal for IO
+- redirects are transparent to the invoked commands; they are set up by the shell before the commands are even invoked
+- when opening a file in linux, it's file descriptor will be the lowest available number; so if we close fd 0, the next opened file will have fd = 0 (for the respective process)
+- `<` _file_ → close fd 0 and open _file_ for reading (which will become the new fd 0)
+- `>` _file_ → close fd 1 and open _file_ for writing (which will become the new fd 1)
+- technically, redirects can be specified even before the actual command (`> files.txt ls` ⇔ `ls > files.txt`)
+- `foo --arg1 --arg2 < input.txt > /dev/null`
+    - shell forks itself (clones itself into a newly created child process)
+    - parent process starts waiting for child process to complete
+    - child closes `stdin`, opens `input.txt` for reading
+    - child closes `stdout`, opens `/dev/null` for writing
+    - child `exec`s the command (`foo`), passing the args
+    - the `foo` command is none the wiser about the redirects
+
+##### Pipelines
+- the pipe operator can be used to connect one command's `stdout` to another's `stdin`
+- `ls | grep foo`
+    - the parent process (the shell) will create a pipe (https://linux.die.net/man/2/pipe)
+    - then it will iterate over the commands (`ls` and `grep`) and create a subshell (`fork`) each of them, interposing the pipe between them
+    - for the first child process (for `ls`), the value of fd 1 (`stdout`) will be the ID of the anonymous pipe - which will result in any output produced by the process being redirected to the pipe
+    - the child process will then `exec` the `ls` command
+    - for the second child process, fd 0 (`stdin`) will be set to the pipe
+    - the parent will wait for both to complete
+- piped commands are ran **in parallel** - the parent process will `fork` each of them
+- more on pipe parallelism: https://stackoverflow.com/a/51452413/447661
+
+##### Commands
+- a command can be a process command or a built-in command; `bash` has 70+ built-ins
+- shell makes built-ins behave the same as external cmds with regards to redirection and piping
+- the `help` built-in gives more details about built-ins (`help if` - more on `if`)
+- `cd` - built-in - a process' CWD cannot be changed externally, so must be a built-in
+- pipeline: a single command, or multiple commands connected with `|`
+- command list: one or more pipelines, separated and terminated by `;`, `&` or `newline`
+- pipelined commands are executed in parallel (`foo | bar | fizz | baz`)
+- `pipelineA && pipelineB`
+- `pipelineA || pipelineB`
+
+##### Variables
+- shell variables are different from _environment_ variables
+- the same syntax is used to expand both kinds of vars: `$foo`
+- `foo=42` - sets the value of the `foo` shell variable to the string "42"
+- `echo ${foo}d` - expands the `foo` variable
+- single quotes remove special meaning from most chars, therefore preventing expansion
+- shell variables are not automatically passed to sub-shells (child processes)
+- use `export` to "tag" a shell variable as an _environment_ variable (which _will_ be inherited by child processes - like any other environment variable)
+
+##### Conditionals
+- conditionals (`if`, `while`) take a list of commands; the exit status of the last one is used to determine the outcome of the conditional (`0` → `true`, anything else → `false`)
+- the [`exit()`](http://man7.org/linux/man-pages/man3/exit.3.html) syscall is used to set the exit status, passed on to any waiting process
+
 #### Other Resources
 - very good and very technical, plus historic bg: http://www.linusakesson.net/programming/tty
 - end of [this document](https://mirrors.edge.kernel.org/pub/linux/docs/lanana/device-list/devices-2.6.txt) has some info 
