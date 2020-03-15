@@ -512,6 +512,38 @@ $(echo foo-$(echo bar)) # will be substituted with the result of running the com
   4. filename expansion
 - there is more nuance to expansions and substitutions (https://linux.die.net/man/1/bash, "Expansion")
 
+#### [Unix terminals and shells - 5 of 5](https://www.youtube.com/watch?v=N8kT2XRNEAg)
+- program commands can be executed in subshells - the parent creates another process (the subshell process), which will then fork and exec the command
+- program commands will always run in a separate process, but built-ins (like `cd`) normally run in the same process
+- parens can be used to start a sub-shell: `(cd /; ls -la;)` (`cd` will not affect the parent process)
+- curly braces execute a command in the _current_ shell: `{ cd /; ls -la; }`
+- the `{` is actually a built-in command, and what follows are arguments given to it - so space is necessary
+- useful bc. redirection would be applied to all enclosed commands
+- not related to function blocks `{}`
+- exist status will be the exit status of the last executed command
+- with `&`, a pipeline can be run "in background":
+    1. shell doesn't wait for it to complete
+    2. pipeline is started in a subshell
+    3. pipeline can't read from terminal
+    4. pipeline could, potentially, be allowed to _write_ to the terminal
+- with `&`, even a curly braced pipeline can be set to run in the background `{ cd /; ls -la; } &`
+- kernel keeps tack of each process' job and session
+- terminal emulators start with one session, containing one job, consisting of the shell process
+- processes started by the shell run as part of the same job; but sub-shells run as new, separate jobs
+- each session has an "controlling terminal" associated with it
+- only one job in a session is running in the foreground
+- fg processes can read/write to terminal, bg proc. get the `SIGTTIN` when they attempt to read the terminal
+- <kbd>Ctrl</kbd> + <kbd>Z</kbd>:
+  1. send `SIGTSTP` to processes of the current fg job (terminal stop)
+  2. send `SIGCONT` to processes of bg job and moves it to fg
+  - normally used to suspend (:?) a long-running process and send it to bg, to get back the job with the shell in it
+- `jobs` - list jobs
+- `bg JOB_NUMBER` - resumes suspended bg job (sends `SIGCONT` to it's procs) so it resumes running in bg
+- `fg JOB_NUMBER` - moves job from bg to fg, and send `SIGCONT` to them
+- `source file` - read and execute commands in the current shell; same as actually typing them
+- `/bin/bash file` - read and execute commands _in a subshell_
+- `#!/bin/bash` - the "#!" is a "shebang" - allows invoking of text files as if they were binary executable
+
 #### Other Resources
 - very good and very technical, plus historic bg: http://www.linusakesson.net/programming/tty
 - end of [this document](https://mirrors.edge.kernel.org/pub/linux/docs/lanana/device-list/devices-2.6.txt) has some info 
