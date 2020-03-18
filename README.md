@@ -328,17 +328,45 @@ E: SUBSYSTEM=block
 E: TAGS=:systemd:
 E: USEC_INITIALIZED=4315137
 ```
+- the path at `DEVPATH` is a folder meant to be read primarily by tools but can reveal some useful information about the device:
+  
+```
+$ ls /sys/devices/pci0000:00/0000:00:14.1/ata1/host0/target0:0:1/0:0:1:0/block/sda
+alignment_offset  capability  device             events        events_poll_msecs  hidden   inflight   power  range      ro    sda2  slaves  subsystem  uevent
+bdi               dev         discard_alignment  events_async  ext_range          holders  integrity  queue  removable  sda1  size  stat    trace
+  ```
 
-- `dd` can be used to interact with block device files
-- https://en.wikipedia.org/wiki/Dd_(Unix)
-
+#### `dd`
+- http://man7.org/linux/man-pages/man1/dd.1.html
+- powerful tool; use with care
 ```
 $ dd if=/dev/zero of=new_file bs=1024 count=1
 1+0 records in
 1+0 records out
-1024 bytes (1.0 kB, 1.0 KiB) copied, 0.000426194 s, 2.4 MB/s
+1024 bytes (1.0 kB, 1.0 KiB) copied, 0.00057832 s, 1.8 MB/s
 ```
-- `/dev/sd*`: disk drives; "sd" stands for <abbr title="Small Computer System Interface">SCSI</abbr> disk
+##### arguments
+- `bs` → block size (if different for i/o, use `ibs` and `obs`)
+- `count` → how many blocks to copy
+
+#### Disks
+- "sd" originates from **S**CSI **d**isk; "sda" → SCSI disk "a"
+- SCSI - Small Computer System Interface - a set of standards
+- `/dev/sd*`: disk drives
+- use `lsscsi` to list SCSI devices
+```
+$ sudo lsscsi
+[0:0:1:0]    disk    ATA      Samsung SSD 860  1B6Q  /dev/sda
+[6:0:0:0]    disk    Lexar    USB Flash Drive  1100  /dev/sdb
+[7:0:0:0]    disk    Lexar    USB Flash Drive  1100  /dev/sdc
+```
+- first column - `[H:C:T:L]` format; [source](http://www.fibrevillage.com/storage/51-linux-lsscsi-list-scsi-devices-or-hosts-and-their-attributes)
+```
+H == hostadapter id (first one being 0)
+C == SCSI channel on hostadapter (first one being 0)
+T == ID
+L == LUN (first one being 0)
+```
 - drives added and named in the order they are detected
 - if you have `sda`, `sdb` and `sdc` and remove `sdb`, the old `sdc` becomes `sdb`
 - `/dev/sr*`: read-only CD/DVD drives
@@ -544,7 +572,19 @@ $(echo foo-$(echo bar)) # will be substituted with the result of running the com
 - `/bin/bash file` - read and execute commands _in a subshell_
 - `#!/bin/bash` - the "#!" is a "shebang" - allows invoking of text files as if they were binary executable
 
-#### Other Resources
+#### More Terminal Resources
 - very good and very technical, plus historic bg: http://www.linusakesson.net/programming/tty
-- end of [this document](https://mirrors.edge.kernel.org/pub/linux/docs/lanana/device-list/devices-2.6.txt) has some info 
 - https://unix.stackexchange.com/questions/4126/what-is-the-exact-difference-between-a-terminal-a-shell-a-tty-and-a-con
+- end of [this document](https://mirrors.edge.kernel.org/pub/linux/docs/lanana/device-list/devices-2.6.txt) has some info 
+
+#### Serial Ports
+- used as special terminal devices; ex: RS-232 (https://en.wikipedia.org/wiki/RS-232)
+- in `/dev/ttyS*`, but not really usable from the CLI because serial communication requires low-level operations
+- https://en.wikipedia.org/wiki/Serial_communication
+- `/dev/ttyS0` would be `COM1` on Windows, `/dev/ttyS1` → `COM2`, etc
+
+#### Parallel Ports
+- largely superseded by USB
+- unidirectional: `/dev/lp0` and `/dev/lp1` - `LPT1` and `LPT2` on Windows
+- can send files directly to a parallel port (w. `cat`)
+- bidirectional: `/dev/parport0` and `/dev/parport1`
