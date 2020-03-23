@@ -289,7 +289,7 @@ block  char
 $ ls /sys/devices/
 breakpoint  cpu  ibs_fetch  ibs_op  isa  LNXSYSTM:00  msr  pci0000:00  platform  pnp0  software  system  tracepoint  virtual
 ```
-- `udevadm` can be used to obtain more information about a device   :
+- `udevadm` can be used to obtain more information about a device:
 
 ```
 $ udevadm info --query=all --name=/dev/sda
@@ -329,7 +329,11 @@ E: TAGS=:systemd:
 E: USEC_INITIALIZED=4315137
 ```
 - the path at `DEVPATH` is a folder meant to be read primarily by tools but can reveal some useful information about the device:
-  
+- `P:` - device `sysfs` path
+- `N:` - device node
+- `S:` - a symlink created by `udevd`
+- `E:` - additional information extracted in `udevd` rules
+
 ```
 $ ls /sys/devices/pci0000:00/0000:00:14.1/ata1/host0/target0:0:1/0:0:1:0/block/sda
 alignment_offset  capability  device             events        events_poll_msecs  hidden   inflight   power  range      ro    sda2  slaves  subsystem  uevent
@@ -588,3 +592,20 @@ $(echo foo-$(echo bar)) # will be substituted with the result of running the com
 - unidirectional: `/dev/lp0` and `/dev/lp1` - `LPT1` and `LPT2` on Windows
 - can send files directly to a parallel port (w. `cat`)
 - bidirectional: `/dev/parport0` and `/dev/parport1`
+
+### udev
+- during boot, kernel creates device files and notifies `udevd`
+- when notified, `udevd` does device initialization, process notification, and mk symlinks in `/dev`
+- devtmpfs
+    - https://unix.stackexchange.com/a/77936/39603
+    - https://lwn.net/Articles/331818/
+- kernel uses an internal network link to send `udevd` notifications about devices
+- `udevd` parses kernel notification, and sets attributes based on it
+- based on the extracted attributes, `udevd` loads rules in `/lib/udev/rules.d` or `/etc/udev/rules.d`
+- a rule has two parts: the "match" part (based on attrs) and the "action" part
+- more on `udev` rules: https://linuxconfig.org/tutorial-on-how-to-write-basic-udev-rules-in-linux
+- https://linux.die.net/man/8/udev
+- this process dictates the layout in `/dev/disk/by-id` & co
+- `udevadm` - tool for interacting with `udevd` - reload rules, trigger events, monitor uevents
+- `udevadm info --querly=all --name=/dev/sda` - see above
+- to monitor for devices being added/removed: `udevadm monitor`
