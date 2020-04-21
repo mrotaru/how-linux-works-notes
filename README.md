@@ -609,3 +609,58 @@ $(echo foo-$(echo bar)) # will be substituted with the result of running the com
 - `udevadm` - tool for interacting with `udevd` - reload rules, trigger events, monitor uevents
 - `udevadm info --querly=all --name=/dev/sda` - see above
 - to monitor for devices being added/removed: `udevadm monitor`
+
+## 4. Disks and Filesystems
+- disks are sub-divided into partitions
+- `parted` - CLI; MBR + GPT
+- `gparted` - GUI; MBR + GPT
+- `fdisk` - CLI; MBR
+- `gdisk` - CLI; GPT
+
+```
+$ sudo parted -l
+Model: ATA Samsung SSD 860 (scsi)
+Disk /dev/sda: 256GB
+Sector size (logical/physical): 512B/512B
+Partition Table: gpt
+Disk Flags:
+
+Number  Start   End     Size    File system  Name  Flags
+ 1      1049kB  2097kB  1049kB                     bios_grub
+ 2      2097kB  256GB   256GB   ext4
+```
+- `parted` calls MBR partition tables "msdos"
+- under MBR, individual paritions cannot be given names
+- under MBR, number of primary partitions is limited to 4
+    - one of them can be made "extended", which means it can be further sub-divided into "logical" partitions
+- `dmesg` when attaching a disk:
+```
+[  480.054612] ata3: exception Emask 0x10 SAct 0x0 SErr 0x40d0000 action 0xe frozen
+[  480.054762] ata3: irq_stat 0x00400040, connection status changed
+[  480.054874] ata3: SError: { PHYRdyChg CommWake 10B8B DevExch }
+[  480.054989] ata3: hard resetting link
+[  485.846088] ata3: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+[  485.857399] ata3.00: failed to enable AA (error_mask=0x1)
+[  485.857519] ata3.00: ATA-8: VB0250EAVER, HPG9, max UDMA/100
+[  485.857524] ata3.00: 488397168 sectors, multi 0: LBA48 NCQ (depth 31/32)
+[  485.858592] ata3.00: failed to enable AA (error_mask=0x1)
+[  485.858719] ata3.00: configured for UDMA/100
+[  485.858751] ata3: EH complete
+[  485.859053] scsi 2:0:0:0: Direct-Access     ATA      VB0250EAVER      HPG9 PQ: 0 ANSI: 5
+[  485.859546] sd 2:0:0:0: [sdb] 488397168 512-byte logical blocks: (250 GB/233 GiB)
+[  485.859575] sd 2:0:0:0: [sdb] Write Protect is off
+[  485.859580] sd 2:0:0:0: [sdb] Mode Sense: 00 3a 00 00
+[  485.859628] sd 2:0:0:0: [sdb] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+[  485.860429] sd 2:0:0:0: Attached scsi generic sg1 type 0
+[  485.881724]  sdb: sdb1
+[  485.882993] sd 2:0:0:0: [sdb] Attached SCSI disk
+```
+- `fdisk` applies changes upon exiting; `parted` applies them _immediatelly_
+- the _cylinder-head-sector_ scheme - numbers reported even by modern hardware, but do not reflect the physical reality
+- modern hardware uses the <abbr title="Logical Block Addressing">LBA</abbr> scheme - allows addressing locations on disk by block number
+- on SSDs, data is normally read in chunks of 4096 bytes (4kB) - so when data not aligned, can need 2 reads even for small files
+- for optimal performance, partition start should be a multiple of 4096
+```
+$ cat /sys/block/sde/sde2/start
+4096
+```
