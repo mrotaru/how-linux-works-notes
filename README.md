@@ -611,6 +611,9 @@ $(echo foo-$(echo bar)) # will be substituted with the result of running the com
 - to monitor for devices being added/removed: `udevadm monitor`
 
 ## 4. Disks and Filesystems
+
+### Partitions
+
 - disks are sub-divided into partitions
 - `parted` - CLI; MBR + GPT
 - `gparted` - GUI; MBR + GPT
@@ -664,3 +667,125 @@ Number  Start   End     Size    File system  Name  Flags
 $ cat /sys/block/sde/sde2/start
 4096
 ```
+
+### File Systems
+- initially were implemented in kernel; [Plan 9](https://en.wikipedia.org/wiki/Plan_9_from_Bell_Labs) pioneered user-space fs
+    - now generally implemented via FUSE (File System in User Space)
+- futher abstratction is provided by Virtual File System (VFS)
+- `mkfs` can be used to create filesystems once partitions are in place: `mkfs -t ext4 /dev/sdf2`
+- `mkfs` is actually a wrapper for various fs-specific utilities (`ls -l /sbin/mkfs.*`)
+- to be usable, a filesystems needs to be mounted
+- the `mount` command, without arguments, shows currently mounted filesystems
+- output format: `<device> on <mount_point> type <fs_type> (<mount_options>)`
+```
+mrotaru@micro-server:~$ mount
+sysfs on /sys type sysfs (rw,nosuid,nodev,noexec,relatime)
+proc on /proc type proc (rw,nosuid,nodev,noexec,relatime)
+udev on /dev type devtmpfs (rw,nosuid,relatime,size=988860k,nr_inodes=247215,mode=755)
+devpts on /dev/pts type devpts (rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=000)
+tmpfs on /run type tmpfs (rw,nosuid,noexec,relatime,size=204060k,mode=755)
+/dev/sde2 on / type ext4 (rw,relatime,data=ordered)
+securityfs on /sys/kernel/security type securityfs (rw,nosuid,nodev,noexec,relatime)
+tmpfs on /dev/shm type tmpfs (rw,nosuid,nodev)
+tmpfs on /run/lock type tmpfs (rw,nosuid,nodev,noexec,relatime,size=5120k)
+tmpfs on /sys/fs/cgroup type tmpfs (ro,nosuid,nodev,noexec,mode=755)
+cgroup on /sys/fs/cgroup/unified type cgroup2 (rw,nosuid,nodev,noexec,relatime)
+cgroup on /sys/fs/cgroup/systemd type cgroup (rw,nosuid,nodev,noexec,relatime,xattr,name=systemd)
+pstore on /sys/fs/pstore type pstore (rw,nosuid,nodev,noexec,relatime)
+cgroup on /sys/fs/cgroup/freezer type cgroup (rw,nosuid,nodev,noexec,relatime,freezer)
+cgroup on /sys/fs/cgroup/blkio type cgroup (rw,nosuid,nodev,noexec,relatime,blkio)
+(... more cgroup stuff)
+systemd-1 on /proc/sys/fs/binfmt_misc type autofs (rw,relatime,fd=26,pgrp=1,timeout=0,minproto=5,maxproto=5,direct,pipe_ino=14545)
+mqueue on /dev/mqueue type mqueue (rw,relatime)
+hugetlbfs on /dev/hugepages type hugetlbfs (rw,relatime,pagesize=2M)
+debugfs on /sys/kernel/debug type debugfs (rw,relatime)
+fusectl on /sys/fs/fuse/connections type fusectl (rw,relatime)
+configfs on /sys/kernel/config type configfs (rw,relatime)
+/var/lib/snapd/snaps/core_8935.snap on /snap/core/8935 type squashfs (ro,nodev,relatime,x-gdu.hide)
+/var/lib/snapd/snaps/core_8689.snap on /snap/core/8689 type squashfs (ro,nodev,relatime,x-gdu.hide)
+/var/lib/snapd/snaps/core18_1705.snap on /snap/core18/1705 type squashfs (ro,nodev,relatime,x-gdu.hide)
+tank on /tank type zfs (rw,xattr,noacl)
+lxcfs on /var/lib/lxcfs type fuse.lxcfs (rw,nosuid,nodev,relatime,user_id=0,group_id=0,allow_other)
+/var/lib/snapd/snaps/httpee_211.snap on /snap/httpee/211 type squashfs (ro,nodev,relatime,x-gdu.hide)
+tmpfs on /run/user/1000 type tmpfs (rw,nosuid,nodev,relatime,size=204056k,mode=700,uid=1000,gid=1000)
+tmpfs on /run/snapd/ns type tmpfs (rw,nosuid,noexec,relatime,size=204060k,mode=755)
+nsfs on /run/snapd/ns/httpee.mnt type nsfs (rw)
+/var/lib/snapd/snaps/httpee_218.snap on /snap/httpee/218 type squashfs (ro,nodev,relatime,x-gdu.hide)
+```
+- `mount` has many params; some general, others fs-specific
+    - `-r` - read-only; implicit when mounting with CDs and such
+    - `-n`- don't update runtime mount db, `/etc/mtab`
+    - `-t` - fs type
+    - `-o ro, conv=auto` - two long options, `ro` (≡`-r`) and `conv=auto` (auto-convert line endings for text files)
+    - other long options: `exec`, `noexec`, `suid`, `nosuid`, `rw`, `conv=binary|text|auto`
+- `unmount <mountpoint>` can be used to unmount
+- device names (like `sda`, etc) are not deterministic; `blkid` provides consistent IDs:
+```
+$ blkid
+/dev/sda1: UUID="6be792bb-3fac-4e2f-a42d-f8ccc78327f4" TYPE="ext4" PARTUUID="000c8617-01"
+/dev/sdb1: LABEL="tank" UUID="11931612062141205475" UUID_SUB="4158743156209613126" TYPE="zfs_member" PARTLABEL="zfs-9a184d671ac054dd" PARTUUID="d0891a37-9115-f14a-959a-b81ad8d15f16"
+/dev/sdd1: LABEL="tank" UUID="11931612062141205475" UUID_SUB="4984306899594034767" TYPE="zfs_member" PARTLABEL="zfs-4c3e4016932caa0b" PARTUUID="49587987-f528-d149-a579-6b2cbfedbb20"
+/dev/sde2: UUID="b04a3bf0-4981-4bdf-9812-60d9b8a43701" TYPE="ext4" PARTUUID="2c8a8d74-5cff-4b32-a5ba-bc6f33fc2511"
+/dev/sdc1: LABEL="tank" UUID="11931612062141205475" UUID_SUB="17071196160985234051" TYPE="zfs_member" PARTLABEL="zfs-5f24ed180d77ad47" PARTUUID="60fd1972-9bbd-4148-b126-39c717dd04f4"
+```
+- these UUIDs are generated upon fs creation
+- UUIDs for the `ext` family of fs can be changed with `tune2fs`
+- to mount using UUID: `mount UUID=6be792bb-3fac-4e2f-a42d-f8ccc78327f4 /home/foo`
+- the `/etc/fstab` file is used to mount fs at startup:
+```
+$ cat /etc/fstab
+UUID=b04a3bf0-4981-4bdf-9812-60d9b8a43701 / ext4 defaults 0 0
+/swap.img       none    swap    sw      0       0
+```
+- format: `<device/uuid> <mount_point> <fs_type> <options> <backup_for_dump> <fs_integrity_test_order>`
+- entries can have `noauto` so they're not automtically mounted, but can be either explicitly or with `mount -a`
+- as alternatives to the `/etc/fstab` file, the `/etc/fstab.d` folder or `systemd` can be used
+- `df` can be ued to see capacity; `-h` option can be used for human-readable sizes:
+```
+$ df -h
+Filesystem      Size  Used Avail Use% Mounted on
+udev            966M     0  966M   0% /dev
+tmpfs           200M  1.2M  199M   1% /run
+/dev/sde2       234G   53G  169G  24% /
+tmpfs           997M     0  997M   0% /dev/shm
+tmpfs           5.0M     0  5.0M   0% /run/lock
+tmpfs           997M     0  997M   0% /sys/fs/cgroup
+/dev/loop0       94M   94M     0 100% /snap/core/8935
+/dev/loop2       55M   55M     0 100% /snap/core18/1705
+tank             15T  128K   15T   1% /tank
+/dev/loop4       17M   17M     0 100% /snap/httpee/211
+tmpfs           200M     0  200M   0% /run/user/1000
+/dev/loop5       17M   17M     0 100% /snap/httpee/218
+/dev/loop3       94M   94M     0 100% /snap/core/9066
+```
+- to see how much space current folder is occupying, use `du -hs`
+- `fsck` can be used to verify file systems - but not currently mounted ones
+- normally fs integrity is checked at boot time, and journaling makes it a rare occasion to have to use it manually
+- care must be exercised and any manually fixable problems should be addresssed before running `fsck`
+- files with only an `inode` (no name) are placed in `lost+found` with a number as the name
+- `/proc` → info abt processes
+- `/sys` → device and system info
+- `/run` → can use memory and swap as storage; `tmpfs` (https://en.wikipedia.org/wiki/Tmpfs)
+- virtual memory, aka swap space - augument _real_ memory (RAM); use `free` for swap overview
+- `mkswap` and `swapon` can be used to register and use a partition or a file as swap space
+- I/O is expensive, the OS should not be using the swap space too frequently
+- a fs has two major components: the actual storage blocks, and a database with meta-information
+- an _inode_ can describe a file - type, permissions, blocks where it is stored
+- an _inode_ can also describe a folder, in which case it contains a list of file names and corresponding links to inodes
+- directory inodes also contain entries for `.` and `..`
+- `ls -i` and `stat` can be used to see inode info
+```
+$ ls -li
+total 24
+5243304 drwxrwxr-x 2 mrotaru mrotaru 4096 Apr 22 19:50 code
+5111828 -rw-rw-r-- 1 mrotaru mrotaru 1024 Mar 18 10:17 new_file
+5243302 drwxr-xr-x 3 mrotaru mrotaru 4096 Apr 18 15:54 snap
+5111821 drwxrwxr-x 2 mrotaru mrotaru 4096 Feb 26 20:28 test
+5111819 -rw-rw---- 1 mrotaru mrotaru    0 Feb 26 20:02 test.txt
+```
+- a hard link is just a manually created entry in a dir inode to an existing file inode
+- `rm` is unlinkig - if a file has hard links pointing to it, each hard link is counted and the file is actually removed only when count is 0
+- for directories, each child dirs `..` counts towards the inode count of the parent
+- root inode's link count has one extra link, from the superblock
+- https://unix.stackexchange.com/questions/4402/what-is-a-superblock-inode-dentry-and-a-file
+- VFS ensures syscalls always return inode numbers and link counts, but their meaning depends on underlying fs
