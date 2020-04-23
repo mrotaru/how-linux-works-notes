@@ -789,3 +789,53 @@ total 24
 - root inode's link count has one extra link, from the superblock
 - https://unix.stackexchange.com/questions/4402/what-is-a-superblock-inode-dentry-and-a-file
 - VFS ensures syscalls always return inode numbers and link counts, but their meaning depends on underlying fs
+
+## How the Linux Kernel Boots
+
+### Overview
+1. BIOS loads and runs bootloader
+2. boot loader finds the kernel image on disk and loads it into memory
+3. kernel inits devices and drivers
+4. kernel mounts the root fs
+5. kernel starts `init` with a PID of 1 - this is the user space start
+6. `init` does the rest of the initialization
+7. `init` start a proces allowing the user to login
+
+### Startup Logs
+- `/var/log/kern.log` (could be truncated, with prev msgs in `kern.log.1`, `kern.log.2.gz`, etc)
+- `dmesg`
+
+### Kernel Initialization
+1. CPU inspection
+2. memory inspection
+3. device bus discovery
+4. device discovery
+5. auxiliary kernel subsystem setup - networking, etc
+6. root fs mount
+7. user space start
+
+### Kernel Params
+- in `/proc/cmdline`:
+```
+$ cat /proc/cmdline
+BOOT_IMAGE=/boot/vmlinuz-4.15.0-96-generic root=UUID=b04a3bf0-4981-4bdf-9812-60d9b8a43701 ro maybe-ubiquity
+```
+- `ro` means root fs will be mounted as read-only initially, for `fsck`, but will then re-mount it as r/w
+- any params the kernel does not understand, will "forward" to the `init` process
+- https://github.com/torvalds/linux/blob/master/Documentation/admin-guide/kernel-parameters.txt
+
+### Boot Loaders
+- boot loader has simple task - select and load kernel image into mem with some params
+- however, when boot loader runs, there is no loaded kernel, drivers or a mounted fs
+- boot loaders use <abbr title="Basic Input/Output System">BIOS</abbr> or <abbr title="Unified Extensible Firmware Interface">UEFI</abbr>; disk firmware exposes <abbr title="Linear Block Addressing">LBA</abbr> interface usable in the absence of drivers
+- boot loaders can read partition tables and have just enough understanding of filesystems to find and read files
+- ability to recover systems entirely from a USB stick obviate the need for some boot loader capabilities (tuning params, single-user mode)
+- most popular boot loader is GRUB (Grand Unified Boot Loader)
+    - other: LILO (+ELILO - UEFI version), SYSLINUX, LOADLIN, efilinux, coreboot, Linux Kernel EFISTUB
+
+#### GRUB
+- hold down <kbd>Shift</kbd> to see the GRUB menu; <kbd>e</kbd> to _edit_ configuration commands
+- config has two references to root: first one is GRUB's root, and second is the future root of the file system
+- `insmod` can be used to load a GRUB dynamic module (https://www.gnu.org/software/grub/manual/grub/grub.html#insmod)
+- `linux` command loads the specified kernel image with the specified parameters
+- `initrd` loads the specified location as the initial RAM fs
