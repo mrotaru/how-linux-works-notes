@@ -828,6 +828,7 @@ BOOT_IMAGE=/boot/vmlinuz-4.15.0-96-generic root=UUID=b04a3bf0-4981-4bdf-9812-60d
 - boot loader has simple task - select and load kernel image into mem with some params
 - however, when boot loader runs, there is no loaded kernel, drivers or a mounted fs
 - boot loaders use <abbr title="Basic Input/Output System">BIOS</abbr> or <abbr title="Unified Extensible Firmware Interface">UEFI</abbr>; disk firmware exposes <abbr title="Linear Block Addressing">LBA</abbr> interface usable in the absence of drivers
+- [BIOS vs UEFI](https://www.howtogeek.com/56958/HTG-EXPLAINS-HOW-UEFI-WILL-REPLACE-THE-BIOS/)
 - boot loaders can read partition tables and have just enough understanding of filesystems to find and read files
 - ability to recover systems entirely from a USB stick obviate the need for some boot loader capabilities (tuning params, single-user mode)
 - most popular boot loader is GRUB (Grand Unified Boot Loader)
@@ -839,3 +840,34 @@ BOOT_IMAGE=/boot/vmlinuz-4.15.0-96-generic root=UUID=b04a3bf0-4981-4bdf-9812-60d
 - `insmod` can be used to load a GRUB dynamic module (https://www.gnu.org/software/grub/manual/grub/grub.html#insmod)
 - `linux` command loads the specified kernel image with the specified parameters
 - `initrd` loads the specified location as the initial RAM fs
+- although GRUB can detect and will assign names to disks (hd0, etc), these can change; fortunatelly, it can "see" partition UUIDs
+
+##### The GRUB CLI
+- can be accessed by pressing <kbd>c</kbd>;
+- `ls` - lists devices known to GRUB; with `-l`, it will also list partition information - like UUIDs
+- `echo $root` will print the GRUB root (ex: `hd0, msdos1`)
+- `ls (hd0,msdos1)/` will list files and directories; ≡ `ls ($root)/`
+- `set` will show all currently set variables - like `prefix`, which points to GRUB config and module location
+- the `boot` command exits the GRUB shell and proceeds to boot the system
+
+##### GRUB Config
+- can be edited from an already booted system; main auto-generated config file normally is `/boot/grub/grub.cfg`
+- not to be edited directly (as it's auto-generated) - custom configs to be loaded with `grub-mkconfig`
+- `grub-mkconfig` builds a new config based on `/etc/grub.d`; w. no args, it only outputs generated config to stdout
+- to actually write a grub config: `grub-mkconfig -o /boot/grub/grub.cfg` (or simply `install-grub` on Ubuntu)
+
+##### GRUB Execution
+- the MBR includes a 441-byte "boot code" section loaded by PC BIOS after <abbr title="Power-On Self Test">POST</abbr>; it simply loads the next stage, usually stored between MBR and first partition
+- UEFI defines a special filesystem, EFI System Partition (ESP); each boot loader has it's own folder in the `efi` folder of ESP
+
+###### Steps
+1. BIOS/firmware initializes the hardware and searches boot-storage devices for boot code
+2. found code is loaded and executed
+3. GRUB core loads
+4. core initializes - becomes able to see disks, partitions, filesystems
+5. identifies its boot partition and loads a configuration
+6. gives user a chance to edit the configuration
+7. once timeout expires, executes `grub.cfg`
+8. during execution, additional modules could be loaded
+9. load initial RAM fs image (`initrd`)
+10. run the `boot` command to load and execute the kernel, as pecified by the `linux` command in cfg
